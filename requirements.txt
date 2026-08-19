@@ -1,0 +1,29 @@
+# FloraQwen 依赖清单 (Python 3.11, CUDA 12.6)
+# 注意: torch/torchvision 由 setup_env.ps1 通过 cu126 index 单独安装, 不在此处
+
+# --- 核心推理 ---
+transformers>=4.57          # Qwen3-VL 需要 >=4.57
+accelerate>=0.34
+bitsandbytes>=0.44          # 4-bit 量化 (QLoRA/推理必需)
+peft>=0.13
+sentencepiece>=0.2
+protobuf>=4.25
+safetensors>=0.4
+
+# --- 训练 ---
+datasets>=3.0
+trl>=0.12
+
+# --- 数据处理 ---
+Pillow>=10.0
+pandas>=2.1
+numpy>=1.26
+PyYAML>=6.0
+scipy>=1.11               # 可选: 解析 Oxford 102 Flowers 的 .mat 标签文件
+
+# --- 推理服务 (可选) ---
+gradio>=4.44
+
+# --- 微调框架 (可选, 二选一; unsloth 安装方式见 setup_env.ps1) ---
+# unsloth
+# llamafactory

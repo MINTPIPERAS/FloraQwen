@@ -1,0 +1,272 @@
+[
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这张照片里是什么植物？请给出中文名、学名和科属。"
+      },
+      {
+        "from": "gpt",
+        "value": "这是**月季**（Rosa chinensis，蔷薇科）。识别依据：羽状复叶、茎生皮刺和重瓣杯状花。喜光耐旱"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n请问图中是什么花？如果可能，请说明容易和它混淆的物种。"
+      },
+      {
+        "from": "gpt",
+        "value": "这是月季，蔷薇科植物，学名 Rosa chinensis。可以通过以下特征识别：羽状复叶、茎生皮刺和重瓣杯状花。喜光耐旱"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这是什么花？它有哪些典型特征？"
+      },
+      {
+        "from": "gpt",
+        "value": "图中是月季（学名 Rosa chinensis，属于蔷薇科）。典型特征：羽状复叶、茎生皮刺和重瓣杯状花。喜光耐旱"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这是什么花？它有哪些典型特征？"
+      },
+      {
+        "from": "gpt",
+        "value": "这是**月季**（Rosa chinensis，蔷薇科）。识别依据：羽状复叶、茎生皮刺和重瓣杯状花。喜光耐旱"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n请问图中是什么花？如果可能，请说明容易和它混淆的物种。"
+      },
+      {
+        "from": "gpt",
+        "value": "这是**月季**（Rosa chinensis，蔷薇科）。识别依据：叶片有光泽、托叶与叶柄合生和花梗较长。常见庭院栽培"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_002.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这株植物叫什么名字？识别依据是什么？"
+      },
+      {
+        "from": "gpt",
+        "value": "图中植物为月季（Rosa chinensis）。主要特征：叶片有光泽、托叶与叶柄合生和花梗较长。它属于蔷薇科。常见庭院栽培"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_002.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这张照片里是什么植物？请给出中文名、学名和科属。"
+      },
+      {
+        "from": "gpt",
+        "value": "这是**月季**（Rosa chinensis，蔷薇科）。识别依据：叶片有光泽、托叶与叶柄合生和花梗较长。常见庭院栽培"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_002.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这张照片里是什么植物？请给出中文名、学名和科属。"
+      },
+      {
+        "from": "gpt",
+        "value": "图中是月季（学名 Rosa chinensis，属于蔷薇科）。典型特征：叶片有光泽、托叶与叶柄合生和花梗较长。常见庭院栽培"
+      }
+    ],
+    "images": [
+      "data/raw/images/rose_002.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这株植物叫什么名字？识别依据是什么？"
+      },
+      {
+        "from": "gpt",
+        "value": "这是**荷花**（Nelumbo nucifera，莲科）。识别依据：盾形叶伸出水面、花大单生和地下茎为藕。水生"
+      }
+    ],
+    "images": [
+      "data/raw/images/lotus_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这株植物叫什么名字？识别依据是什么？"
+      },
+      {
+        "from": "gpt",
+        "value": "图中是荷花（学名 Nelumbo nucifera，属于莲科）。典型特征：盾形叶伸出水面、花大单生和地下茎为藕。水生"
+      }
+    ],
+    "images": [
+      "data/raw/images/lotus_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n请问图中是什么花？如果可能，请说明容易和它混淆的物种。"
+      },
+      {
+        "from": "gpt",
+        "value": "图中植物为牡丹（Paeonia suffruticosa）。主要特征：二回三出复叶、花顶生大型和根皮入药称丹皮。它属于芍药科。落叶灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/peony_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这是什么花？它有哪些典型特征？"
+      },
+      {
+        "from": "gpt",
+        "value": "图中植物为牡丹（Paeonia suffruticosa）。主要特征：二回三出复叶、花顶生大型和根皮入药称丹皮。它属于芍药科。落叶灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/peony_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这株植物叫什么名字？识别依据是什么？"
+      },
+      {
+        "from": "gpt",
+        "value": "这是牡丹，芍药科植物，学名 Paeonia suffruticosa。可以通过以下特征识别：二回三出复叶、花顶生大型和根皮入药称丹皮。落叶灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/peony_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这张照片里是什么植物？请给出中文名、学名和科属。"
+      },
+      {
+        "from": "gpt",
+        "value": "图中是牡丹（学名 Paeonia suffruticosa，属于芍药科）。典型特征：二回三出复叶、花顶生大型和根皮入药称丹皮。落叶灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/peony_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n图片里的是什么植物？请简要介绍它的特征。"
+      },
+      {
+        "from": "gpt",
+        "value": "这是桂花，木樨科植物，学名 Osmanthus fragrans。可以通过以下特征识别：叶对生革质、花簇生叶腋和浓香。常绿灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/osmanthus_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n帮我识别一下这张图里的植物，并说说它属于什么科。"
+      },
+      {
+        "from": "gpt",
+        "value": "图中是桂花（学名 Osmanthus fragrans，属于木樨科）。典型特征：叶对生革质、花簇生叶腋和浓香。常绿灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/osmanthus_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这是什么花？它有哪些典型特征？"
+      },
+      {
+        "from": "gpt",
+        "value": "这是桂花，木樨科植物，学名 Osmanthus fragrans。可以通过以下特征识别：叶对生革质、花簇生叶腋和浓香。常绿灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/osmanthus_001.jpg"
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<image>\n这张照片里是什么植物？请给出中文名、学名和科属。"
+      },
+      {
+        "from": "gpt",
+        "value": "这是**桂花**（Osmanthus fragrans，木樨科）。识别依据：叶对生革质、花簇生叶腋和浓香。常绿灌木"
+      }
+    ],
+    "images": [
+      "data/raw/images/osmanthus_001.jpg"
+    ]
+  }
+]
