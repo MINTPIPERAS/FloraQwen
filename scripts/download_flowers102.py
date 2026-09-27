@@ -85,10 +85,11 @@ def main() -> None:
             sys.exit(1)
         with tarfile.open(tgz, "r:gz") as t:
             t.extractall(out / "_tmp_images")
-        # tgz 内含 jpg_1.jpg ... jpg_8189.jpg
-        for p in (out / "_tmp_images").glob("*.jpg"):
+        # tgz 内为 jpg/ 子目录, 内含 jpg_1.jpg ... jpg_8189.jpg (2026-09-17 实测)
+        import shutil
+        for p in (out / "_tmp_images").rglob("*.jpg"):
             p.rename(images_dir / p.name)
-        (out / "_tmp_images").rmdir()
+        shutil.rmtree(out / "_tmp_images", ignore_errors=True)
 
     # 读标签与划分
     print("[3/3] 生成 labels.csv 与 splits.json")

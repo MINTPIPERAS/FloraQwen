@@ -1,0 +1,33 @@
+# FloraQwen QLoRA 全量训练配置 (train_lora_trl.py 后端)
+# 用法: python scripts/train_lora_trl.py --config configs/lora_config_full.yaml
+# 与 lora_config.yaml 的唯一区别: 数据用全量 24466 条, 训练 1 epoch (~13 小时, 单步 31s 实测)
+
+# ---- 模型与数据 ----
+model_name: Qwen/Qwen3-VL-4B-Instruct
+data_path: data/processed/train.full.json      # 全部 8189 张图, 24466 条对话
+output_dir: models/lora-qwen3vl-4b-flora-full
+
+# ---- LoRA 参数 (8GB 显存友好) ----
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  use_gradient_checkpointing: unsloth   # 显存关键优化
+  random_state: 42
+
+# ---- 训练参数 (batch=1 + 梯度累积, 8GB 可行) ----
+training:
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16       # 等效 batch 16, 显存不变
+  num_train_epochs: 1                   # 全量数据 1 epoch ≈ 1529 步 ≈ 13 小时
+  learning_rate: 1.0e-4
+  max_seq_length: 2048                  # 图像 token 占大头, 过高会 OOM
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  logging_steps: 5
+  save_steps: 100
+  save_total_limit: 2
+  seed: 42
+
+# ---- 保存策略 ----
+merge_on_save: false     # 只保存 LoRA adapter (数百 MB), 不合并基座

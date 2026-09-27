@@ -1,0 +1,40 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+
+# ---- 数据（脚本可再生成，不入库）----
+# Oxford 102 Flowers 8189 张图 (~1.4GB): python scripts/download_flowers102.py 再生成
+data/raw/flowers102/
+# 评估集硬链接: python scripts/build_test_set.py 再生成
+data/test/
+# 生成的标签 (示例模板 labels.example.csv 保留入库)
+data/raw/labels*.csv
+!data/raw/labels.example.csv
+# 生成的训练集 (train.json / train.full.json): prepare_data.py 再生成
+data/processed/*.json
+# 下载断点文件
+*.part
+# 备份文件
+*.bak
+# data/ 根目录下的临时测试图片 (正式图片放 data/raw/images/)
+data/*.png
+
+# ---- 模型产物 ----
+# LoRA adapter + checkpoint (数百MB): 训练产出, infer.py 按 --adapter 加载
+models/*
+!models/.gitkeep
+
+# ---- 训练日志 ----
+# logs/ 下的 .py/.ps1 工具脚本保留跟踪, 只忽略运行日志
+logs/*.log
+
+# ---- IDE / 系统 ----
+.vscode/
+.idea/
+.zcode/
+.DS_Store
+Thumbs.db

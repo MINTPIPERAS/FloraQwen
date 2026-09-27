@@ -1,105 +1,148 @@
 # FloraQwen
 
-基于千问（Qwen）基座模型的花草识别智能体，可在 **8GB 显存笔记本**（如 RTX 4060 Laptop）上完成 QLoRA 微调与本地推理。
+基于千问（Qwen3-VL-4B）的花草识别智能体，可在 **8GB 显存笔记本**（如 RTX 4060 Laptop）上完成 QLoRA 微调与本地推理。本项目已端到端跑通：**数据下载 → 训练集构建 → QLoRA 微调 → 推理**，以下命令均为实测记录。
 
-## 技术方案
+## 当前进度
 
-完整方案见 [`docs/FloraQwen-花草识别智能体技术方案.md`](docs/FloraQwen-花草识别智能体技术方案.md)。
-
-- **基座**：Qwen/Qwen3-VL-4B-Instruct（首选，经 hf-mirror 下载）/ Qwen2.5-VL-3B-Instruct（备选）
-- **训练**：QLoRA（4-bit NF4 + 梯度累积 + 梯度检查点），8GB 可行
-- **部署**：transformers 4-bit 推理 / GGUF + Ollama
-
-## 环境状态（本机已就绪）
-
-| 项 | 值 |
+| 里程碑 | 状态 |
 |---|---|
-| 系统 | Windows + conda 环境 `floraqwen`（Python 3.11.15） |
-| GPU | NVIDIA GeForce RTX 4060 Laptop (8.0 GB) |
-| torch | 2.11.0+cu126（CUDA 12.6, `cuda.is_available()=True`） |
-| 依赖 | transformers 5.5.0 / bitsandbytes / peft / accelerate / datasets 5.0.1 等 |
-| 模型 | Qwen/Qwen3-VL-4B-Instruct（**ModelScope 下载，8.9GB，2026-08-18 完成**，F 盘） |
+| M1 环境搭建 + 基线推理 | ✅ 2026-09-17 打通 |
+| M2 数据管道（Oxford 102 Flowers, 8189 张） | ✅ 2026-09-17 落盘 |
+| M3 QLoRA 微调（子集 915 条 ✅ / 全量 24466 条 ✅） | ✅ 2026-09-17 / 09-20 |
+| M4 评估（Top-1 准确率） | 🚧 评估集已就绪（2040 张 / 102 类） |
+| M5 智能体交互层 + 工具调用 | ⏳ `src/floraqwen/agent.py` 骨架已写 |
+| M6 部署（GGUF/Ollama） | ⏳ |
 
-**国内网络要点**（已实测）：
-- PyPI 走清华镜像：`pip install xxx -i https://pypi.tuna.tsinghua.edu.cn/simple`
-- **模型下载首选 ModelScope（魔搭）**——国内直连、多线程 + 断点续传，8.9GB 约 18 分钟下完：
-  ```powershell
-  pip install modelscope -i https://pypi.tuna.tsinghua.edu.cn/simple
-  modelscope download --model Qwen/Qwen3-VL-4B-Instruct --local_dir F:\hf-cache\models\Qwen3-VL-4B-Instruct
-  python logs\wire_hf_cache.py   # 校验 sha256 并以硬链接接入 HF 缓存 (F:\hf-cache\huggingface), 零额外磁盘
-  ```
-- hf-mirror 兜底：`$env:HF_ENDPOINT="https://hf-mirror.com"` + `$env:HF_HUB_DISABLE_XET="1"`（必须禁用 Xet，否则 401）。注意：hf-mirror 大文件走 AWS CDN 签名 URL，速度慢且易中途失效；**曾因 `logs/download_single.ps1` 中 sha256↔文件名映射写反导致"下载正确也校验失败"的死循环（2026-08-18 已修正）**
-- Windows 上 PyTorch 的 CUDA wheel 只能从官方源获取（各镜像均 302 回官方）；网络受限时用分片并发 + 代理下载（见 logs/torch_dl/download_parts.ps1 的经验）
-- 含中文的 `.ps1` 脚本需保存为 **UTF-8 带 BOM**，否则本机 PowerShell 按 GBK 解析会吞字符串引号
+## 环境要求
 
-## 快速开始
+| 项 | 要求 | 本机实测 |
+|---|---|---|
+| GPU | 8GB VRAM（4-bit QLoRA 路线） | RTX 4060 Laptop, 训练显存峰值 ~7.9GB |
+| 内存 | 16GB+（训练时关浏览器等大户） | 15.6GB 可跑 |
+| 系统 | Windows 10/11 | 已实测 |
+| Python | conda 环境 `floraqwen`（Python 3.11 + torch cu126） | 见 `scripts/setup_env.ps1` |
 
-> 💡 完整操作说明见 [`docs/启动指南.md`](docs/启动指南.md)（conda 初始化、`(base)` 说明、FAQ）。
-> 💡 **推荐用一键启动器**（自动设环境变量 + 自动用 floraqwen 的 python，不依赖激活与当前目录）：
+模型与缓存默认放 **F 盘**（`HF_HOME=F:\hf-cache\huggingface`），防止写满 C 盘；基座模型 Qwen3-VL-4B-Instruct (8.9GB) 已通过 ModelScope 下载并硬链接接入 HF 缓存（见 `docs/启动指南.md`）。
+
+## 快速开始（5 步）
+
+> 推荐用一键启动器 `.\scripts\run.ps1 <脚本>`：自动切到项目根目录、设好 HF 环境变量、用 `floraqwen` 的 python 运行，无需激活环境。
+> 手动方式：每个新终端先 `. .\scripts\set_env.ps1`，再 `conda activate floraqwen`。
+
+### ① 环境检查（~1 分钟）
 
 ```powershell
-cd F:\GithubDeskClone\FloraQwen
 .\scripts\run.ps1 scripts\check_env.py
-.\scripts\run.ps1 scripts\infer.py --image data\raw\images\rose_001.jpg
 ```
 
-传统方式（手动激活，每个新终端需先设环境变量，否则会去 C 盘重新下载模型）：
+torch/CUDA 为 [OK] 即环境可用。
+
+### ② 模型加载冒烟测试（~40 秒，必须通过）
 
 ```powershell
-# 0. (重要) 设置环境变量: 模型缓存放 F 盘, 防止写满 C 盘
-#    每个新终端运行一次: . .\scripts\set_env.ps1
-#    或手动: $env:HF_HOME="F:\hf-cache\huggingface"; $env:HF_ENDPOINT="https://hf-mirror.com"; $env:HF_HUB_DISABLE_XET="1"
+.\scripts\run.ps1 logs\smoke_load_model.py
+```
 
-# 1. 搭建环境 (若本机尚未执行)
-powershell -ExecutionPolicy Bypass -File scripts\setup_env.ps1
+期望输出 `SMOKE TEST PASSED`。**若在此崩溃 = Windows 加载补丁丢失**（见下文"已知坑"第 1 条），后续训练/推理都会段错误。
 
-# 2. 检查环境
-conda activate floraqwen
-python scripts\check_env.py
+### ③ 数据准备（首次约 80 分钟，主要是下载）
 
-# 3. 准备数据: 图片放入 data\raw\images\, 标签写入 data\raw\labels.csv
-#    (参考 data\raw\labels.example.csv, 当前含示例占位数据)
-python scripts\prepare_data.py
+```powershell
+# 3.1 下载并整理 Oxford 102 Flowers (8189 张 + 官方 train/val/test 划分)
+python scripts\download_flowers102.py --out data\raw\flowers102
 
-# 4. 基线推理 (模型已下载到 F:\hf-cache\huggingface)
+# 3.2 生成训练标签 (102 类中文名/科属/特征映射; 默认官方 train 划分 1020 行)
+python scripts\make_flowers102_labels.py
+#    需要全量 8189 张时: python scripts\make_flowers102_labels.py --all --out data\raw\labels.all.csv
+
+# 3.3 生成 ShareGPT 格式训练集
+python scripts\prepare_data.py --labels data\raw\labels.csv --images-dir data\raw --out data\processed\train.json --max-per-class 3   # 子集 ~915 条
+#    全量: 把 --labels 换成 labels.all.csv、--out 换成 data\processed\train.full.json、去掉 --max-per-class (~24466 条)
+
+# 3.4 (可选) 构建评估集 (官方 test 划分, 硬链接零额外磁盘)
+python scripts\build_test_set.py --max-per-class 20
+```
+
+### ④ QLoRA 训练
+
+```powershell
+# 子集试跑 (915 条, 3 epoch, 实测 ~1.5 小时) —— 先跑这个验证全链路
+python scripts\train_lora_trl.py --config configs\lora_config.yaml
+
+# 全量训练 (24466 条, 1 epoch, 实测 ~10-14 小时)
+python scripts\train_lora_trl.py --config configs\lora_config_full.yaml
+```
+
+- 训练细节（参数说明、时长预估、断点续训思路）见 `docs/2026-09-17-训练操作指南.md`；
+- 每 100 步自动存 checkpoint；产出 LoRA adapter（~132MB）到 `models/` 下对应目录；
+- 训练健康判据：单步 ~20-32s、loss 从 4.5 持续下降、GPU 利用率 85-99%（`nvidia-smi`；任务管理器默认只显示 3D 引擎，会误显 0%）。
+
+### ⑤ 推理与评估
+
+```powershell
+# 单图识别 (基座): 
 python scripts\infer.py --image data\raw\images\rose_001.jpg
 
-# 5. QLoRA 微调 (需真实数据, 示例数据仅用于流程验证)
-python scripts\train_lora.py --config configs\lora_config.yaml
+# 加载微调 adapter:
+python scripts\infer.py --image "data\test\向日葵\image_05399.jpg" --adapter models\lora-qwen3vl-4b-flora-full
+
+# 批量评估 Top-1 准确率 (每类 N 张, N=1 约 25 分钟):
+python scripts\evaluate.py --test-dir data\test --adapter models\lora-qwen3vl-4b-flora-full --limit 1
 ```
+
+## Windows 已知坑（重要）
+
+1. **transformers 5.5.0 加载段错误（已修）**：Windows 下 safetensors 的 mmap 后端会耗尽提交内存导致 0xC0000005 崩溃。本机在 `site-packages/transformers/modeling_utils.py` 打了 pread 后端站点补丁（上游 [PR #48341](https://github.com/huggingface/transformers/pull/48341) 的最小落地）。**升级/重装 transformers 会丢失补丁**——用第②步冒烟测试检验；升级到 ≥5.16 版本可彻底替代补丁。原理与诊断过程见 `docs/2026-09-17-数据集与训练工作记录.md`。
+2. **HF 缓存环境变量**：`set_env.ps1` / `run.ps1` 会自动设 `HF_HOME` 指向 F 盘并开启离线模式；手动跑脚本前务必先设，否则会去 C 盘重新下载 8.9GB 模型。
+3. **Flowers102 标签编号**：`imagelabels.mat` 的 1-102 编号对应官方原始类目顺序，**不是** VGG 官网 `categories.html` 的字母序（直接照抄会 102 类全错位）。`make_flowers102_labels.py` 已内置正确映射，勿用官网页面自行对照。
+4. **内存偏紧**：全量训练曾因一次性把 2.4 万张图解码进内存而 OOM（`train_lora_trl.py` 已改为按 batch 惰性解码）；运行大任务前关闭浏览器等内存大户。
+5. **控制台编码**：含中文/emoji 的输出建议 UTF-8 终端；含中文的 `.ps1` 需保存为 UTF-8 带 BOM。
 
 ## 项目结构
 
 ```
 FloraQwen/
-├── docs/                   # 技术方案
+├── configs/
+│   ├── lora_config.yaml          # 子集训练配置 (3 epoch)
+│   └── lora_config_full.yaml     # 全量训练配置 (24466 条, 1 epoch)
 ├── data/
-│   ├── raw/                # 原始图片 + labels.csv (示例模板见 labels.example.csv)
-│   └── processed/          # train.json (ShareGPT 格式训练集)
-├── configs/lora_config.yaml
+│   ├── raw/                      # 图片 + labels.csv (脚本生成; 示例模板 labels.example.csv)
+│   │   └── flowers102/           # Oxford 102 Flowers (下载生成, 不入库)
+│   ├── processed/                # train.json (ShareGPT 训练集, 脚本生成)
+│   └── test/                     # 评估集 <中文名>/*.jpg (脚本生成, 不入库)
+├── docs/
+│   ├── 启动指南.md                       # conda 初始化、HF 缓存说明
+│   ├── FloraQwen-花草识别智能体技术方案.md  # 总体技术方案
+│   ├── 2026-09-17-数据集与训练工作记录.md   # 数据拉取/段错误诊断/训练全记录 (原理+踩坑)
+│   └── 2026-09-17-训练操作指南.md          # 训练命令/参数/时长/坑清单
+├── logs/                         # 诊断与验证脚本 (smoke_load_model / collator_test 等) + 运行日志(不入库)
+├── models/                       # LoRA adapter 产物 (不入库)
 ├── scripts/
-│   ├── setup_env.ps1              # Windows 环境搭建 (conda + CUDA)
-│   ├── set_env.ps1                # 每终端运行: HF_HOME/HF_ENDPOINT 等环境变量
-│   ├── check_env.py               # 环境检查
-│   ├── prepare_data.py            # 图片+标签 → ShareGPT JSON
-│   ├── build_labels_from_folders.py  # 按物种文件夹批量生成 labels.csv (iNaturalist/自拍)
-│   ├── download_flowers102.py     # Oxford 102 Flowers 一键下载整理 (国际基线)
-│   ├── train_lora.py              # QLoRA 微调 (Unsloth 后端)
-│   ├── train_lora_trl.py          # QLoRA 微调 (纯 transformers+peft 备选, Windows 可用)
-│   ├── evaluate.py                # 识别评估 (按物种目录算准确率)
-│   └── infer.py                   # 推理 (基线/微调后, 4-bit)
-├── src/floraqwen/          # 智能体核心包 (agent.py: 结构化识别 + 置信度兜底)
-├── models/                 # 微调产物
-└── notebooks/              # 探索实验
+│   ├── setup_env.ps1             # Windows 环境搭建 (conda + CUDA torch)
+│   ├── set_env.ps1 / run.ps1     # 环境变量设置 / 一键启动器
+│   ├── check_env.py              # 环境检查
+│   ├── download_flowers102.py    # Oxford 102 Flowers 一键下载整理
+│   ├── make_flowers102_labels.py # 102 类英文→中文/科属/特征映射 → labels.csv
+│   ├── prepare_data.py           # labels.csv → ShareGPT train.json
+│   ├── build_test_set.py         # 官方 test 划分 → data/test/<物种>/ 评估集
+│   ├── train_lora.py             # QLoRA 微调 (Unsloth 后端, 本机未装 unsloth 不可用)
+│   ├── train_lora_trl.py         # QLoRA 微调 (transformers+peft, Windows 实测可用) ★
+│   ├── evaluate.py               # 按物种目录算 Top-1 准确率
+│   └── infer.py                  # 推理 (基座/adapter, 4-bit)
+├── src/floraqwen/                # 智能体核心包 (agent.py: 结构化识别 + 置信度兜底)
+└── notebooks/                    # 探索实验
 ```
 
-## 里程碑进度
+## 常用命令速查
 
-| 阶段 | 状态 |
+| 用途 | 命令 |
 |---|---|
-| M1 环境搭建 + 基线推理 | 🚧 环境已就绪；**模型已下载到 F 盘**（ModelScope, 2026-08-18），待跑通 `infer.py` 基线推理 |
-| M2 数据收集与清洗 | 🚧 管道已就绪（`prepare_data.py` 实测通过），待真实数据 |
-| M3 QLoRA 微调 v1 | ⏳ |
-| M4 评估迭代 | ⏳ |
-| M5 智能体交互层 + 工具调用 | ⏳ |
-| M6 部署 (GGUF/Ollama) | ⏳ |
+| 环境检查 | `.\scripts\run.ps1 scripts\check_env.py` |
+| 模型加载冒烟测试 | `.\scripts\run.ps1 logs\smoke_load_model.py` |
+| 下载数据集 | `python scripts\download_flowers102.py --out data\raw\flowers102` |
+| 生成训练集 | 见"快速开始 ③" |
+| 子集训练 (~1.5h) | `python scripts\train_lora_trl.py --config configs\lora_config.yaml` |
+| 全量训练 (~10-14h) | `python scripts\train_lora_trl.py --config configs\lora_config_full.yaml` |
+| 单图识别 | `python scripts\infer.py --image <图片> --adapter <adapter目录>` |
+| 评估准确率 | `python scripts\evaluate.py --test-dir data\test --adapter <adapter目录> --limit 1` |
+| GPU 状态 | `nvidia-smi --query-gpu=utilization.gpu,memory.used,temperature.gpu --format=csv -l 5` |

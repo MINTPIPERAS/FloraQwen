@@ -29,31 +29,49 @@ def load_config(path: str) -> dict:
 
 
 def build_dataset(data_path: str):
-    """ShareGPT JSON -> [{image: PIL, messages: [{role, content}]}]"""
-    from PIL import Image
+    """ShareGPT JSON -> [{image_path: str, messages: [{role, content}]}]
 
+    只存图片路径, 图片在 collator 里按 batch 解码——全量 24466 张图若
+    在此处一次性解码进内存约需 18GB, 会直接 MemoryError (2026-09-20 实测)。
+    消息中保留 {"type": "image"} 内容块标记, 保证 chat template 渲染视觉占位符。
+    """
     samples = json.loads(Path(data_path).read_text(encoding="utf-8"))
     out = []
     for s in samples:
-        img = Image.open(s["images"][0]).convert("RGB")
-        messages = [
-            {"role": "user", "content": m["value"].replace("<image>\n", "").replace("<image>", "")}
-            if m["from"] == "human"
-            else {"role": "assistant", "content": m["value"]}
-            for m in s["conversations"]
-        ]
-        out.append({"image": img, "messages": messages})
+        messages = []
+        for m in s["conversations"]:
+            if m["from"] == "human":
+                text = m["value"].replace("<image>\n", "").replace("<image>", "").strip()
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image"},
+                            {"type": "text", "text": text},
+                        ],
+                    }
+                )
+            else:
+                messages.append({"role": "assistant", "content": m["value"]})
+        out.append({"image_path": s["images"][0], "messages": messages})
     return out
 
 
 class VLDataCollator:
-    """把 (image, messages) 编码为模型输入, prompt 部分 mask 掉 (labels=-100)。"""
+    """把 (image, messages) 编码为模型输入, prompt 部分 mask 掉 (labels=-100)。
+
+    prompt 长度按"带图重处理 prompt 文本"得到, 与 input_ids 中的图像 token
+    展开后长度一致; batch=1 时逐条计算无 padding 误差。
+    """
 
     def __init__(self, processor):
         self.processor = processor
 
     def __call__(self, features):
-        images = [f["image"] for f in features]
+        from PIL import Image
+
+        # 按 batch 实时解码 (batch=1, 瞬时内存极小), 全量数据不 OOM
+        images = [Image.open(f["image_path"]).convert("RGB") for f in features]
         texts = [
             self.processor.apply_chat_template(f["messages"], tokenize=False, add_generation_prompt=False)
             for f in features
@@ -63,11 +81,15 @@ class VLDataCollator:
         # labels: 只对 assistant 回答计算 loss, prompt 部分 = -100
         labels = batch["input_ids"].clone()
         for i, f in enumerate(features):
-            prompt_tokens = self.processor.apply_chat_template(
-                f["messages"][:-1], tokenize=True, add_generation_prompt=True
+            prompt_text = self.processor.apply_chat_template(
+                f["messages"][:-1], tokenize=False, add_generation_prompt=True
             )
-            prompt_len = len(prompt_tokens)
+            prompt_ids = self.processor(text=prompt_text, images=images[i], return_tensors="pt")["input_ids"][0]
+            prompt_len = prompt_ids.shape[0]
             labels[i, :prompt_len] = -100
+        # padding 位置一并 mask
+        if batch.get("attention_mask") is not None:
+            labels = labels.masked_fill(batch["attention_mask"] == 0, -100)
         batch["labels"] = labels
         return batch
 
