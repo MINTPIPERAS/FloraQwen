@@ -22,7 +22,53 @@
 | 系统 | Windows 10/11 | 已实测 |
 | Python | conda 环境 `floraqwen`（Python 3.11 + torch cu126） | 见 `scripts/setup_env.ps1` |
 
-模型与缓存默认放 **F 盘**（`HF_HOME=F:\hf-cache\huggingface`），防止写满 C 盘；基座模型 Qwen3-VL-4B-Instruct (8.9GB) 已通过 ModelScope 下载并硬链接接入 HF 缓存（见 `docs/启动指南.md`）。
+模型与缓存默认放 **F 盘**（`HF_HOME=F:\hf-cache\huggingface`），防止写满 C 盘；基座模型 Qwen3-VL-4B-Instruct (8.9GB) 已通过 ModelScope 下载并硬链接接入 HF 缓存（见 `docs/启动指南.md`）。**如何把下载/读取位置改成别的盘，见下节。**
+
+## 模型缓存位置：默认行为与自定义
+
+**默认行为**：下载与读取走的是**同一个目录**——`HF_HOME` 指向的缓存（本项目默认 `F:\hf-cache\huggingface`，模型实体在 `HF_HOME\hub\` 下）。首次 `from_pretrained` 下载到那里，之后每次加载也从那里读；`HF_HUB_OFFLINE=1` 时纯离线读取、绝不联网。
+
+> ⚠️ `set_env.ps1` 默认 `HF_HUB_OFFLINE=1`。**新机器第一次下载模型前**请勿开启离线模式（不运行该脚本，或设 `$env:HF_HUB_OFFLINE = "0"`），下载完成后再改回 `1`。
+
+### 新人自定义缓存位置（不改项目代码，三选一）
+
+**方法一：环境变量覆盖（推荐）**
+不要运行 `set_env.ps1`、不要用 `run.ps1` 启动（两者会把 `HF_HOME` 覆盖回 F 盘），改为每个终端手动设置：
+
+```powershell
+$env:HF_HOME = "D:\my-hf-cache"              # 下载 + 读取都在这个目录
+# 可选: 只单独指定模型缓存目录 (优先级高于 HF_HOME\hub)
+$env:HF_HUB_CACHE = "D:\my-hf-cache\hub"
+
+# 首次下载需要联网 + 国内镜像:
+$env:HF_ENDPOINT = "https://hf-mirror.com"
+$env:HF_HUB_DISABLE_XET = "1"                # 不加会 401
+
+# 之后所有命令直接用 python 运行 (不经过 run.ps1):
+python scripts\train_lora_trl.py --config configs\lora_config.yaml
+python scripts\infer.py --image xxx.jpg
+```
+
+`infer.py` 的 F 盘兜底**只在 `HF_HOME` 未设置时触发**——只要你显式设置了 `HF_HOME`，它就完全尊重你的设置。缓存下载完整后建议补上 `$env:HF_HUB_OFFLINE = "1"`，加载零联网、更快更稳。
+
+**方法二：永久生效**
+
+```powershell
+setx HF_HOME "D:\my-hf-cache"     # 对之后新开的终端生效 (set_env.ps1/run.ps1 运行时仍会覆盖当前会话)
+```
+
+**方法三：完全绕开缓存，直接用本地模型目录**（读取位置自己说了算，适合模型放在移动硬盘/共享盘的场景）
+
+```powershell
+# 用 ModelScope 把模型下载到任意目录 (国内直连, 多线程断点续传)
+modelscope download --model Qwen/Qwen3-VL-4B-Instruct --local_dir D:\models\Qwen3-VL-4B-Instruct
+
+# 训练与推理都支持 --model 传本地路径, 不查任何缓存:
+python scripts\train_lora_trl.py --config configs\lora_config.yaml --model D:\models\Qwen3-VL-4B-Instruct
+python scripts\infer.py --image xxx.jpg --model D:\models\Qwen3-VL-4B-Instruct
+```
+
+> 补充：什么都不设置时，HuggingFace 的默认缓存在 `C:\Users\<用户名>\.cache\huggingface`（需要 C 盘有 ~10GB 空闲）。
 
 ## 快速开始（5 步）
 
